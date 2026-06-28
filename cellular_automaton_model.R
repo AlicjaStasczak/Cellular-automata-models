@@ -8,7 +8,7 @@
 #
 # Required input structure:
 #   project_dir/
-#   ├── exp_data/            
+#   ├── exp_data/
 #   ├── reference.rda           # Fitted logspline distributions:
 #   │                        # fit.angles, fit.distances, fit.cycle.length
 #   └── this_script.R
@@ -69,6 +69,23 @@ load_multiple_excel_files <- function(folder_path, sheet_name = "Overall") {
   })
 
   return(list(data_list = data_list, files = files))
+}
+
+# Extract experimental cell-count data.
+prepare_experimental_data <- function(data_exp) {
+  if (all(c("Variable", "Value", "Time") %in% colnames(data_exp))) {
+    real_data <- data_exp[data_exp$Variable == "Number of Cells per Time Point", ]
+    real_data <- real_data[order(as.numeric(real_data$Time)), ]
+    real_data <- real_data[, c("Variable", "Value", "Time")]
+    real_data$Value <- as.numeric(real_data$Value)
+    real_data$Time <- as.numeric(real_data$Time)
+  } else {
+    real_data <- data_exp
+    real_data <- real_data[-(1:2), ]
+    real_data <- head(real_data, -2)
+  }
+
+  return(real_data)
 }
 
 # Euclidean distance between two vectors of the same length.
@@ -173,9 +190,7 @@ automaton_init <- function(
     data_exp,
     initial_conditions_path = initial_conditions_file
 ) {
-  real_data <- data_exp
-  real_data <- real_data[-(1:2), ]
-  real_data <- head(real_data, -2)
+  real_data <- prepare_experimental_data(data_exp)
 
   total_cells <- as.numeric(real_data[nrow(real_data), 2])
   initial_cells_experiment <- cell_number_init
@@ -246,9 +261,7 @@ run_cellular_automaton <- function(
 
   load(file = initial_conditions_path)
 
-  real_data <- data_exp
-  real_data <- real_data[-(1:2), ]
-  real_data <- head(real_data, -2)
+  real_data <- prepare_experimental_data(data_exp)
 
   total_cells <- as.numeric(real_data[nrow(real_data), 2])
   initial_cells_experiment <- cell_number_init
@@ -525,9 +538,7 @@ run_algorithm <- function(s, repeats = 2) {
       data_exp <- experimental_data_list[[file_id]]
       input_file_name <- tools::file_path_sans_ext(basename(files[file_id]))
 
-      real_data <- data_exp
-      real_data <- real_data[-(1:2), ]
-      real_data <- head(real_data, -2)
+      real_data <- prepare_experimental_data(data_exp)
       initial_cell_number <- as.numeric(real_data[1, 2])
 
       run_cellular_automaton(
