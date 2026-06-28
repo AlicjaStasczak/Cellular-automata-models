@@ -23,7 +23,7 @@ options(repos = c(CRAN = "https://cran.r-project.org"))
 # -----------------------------------------------------------------------------
 experimental_data_dir <- "exp_data/"
 initial_conditions_file <- "reference.rda"
-output_file_csv <- "simulations_results.csv"
+output_file_csv <- "simulation_results.csv"
 
 # -----------------------------------------------------------------------------
 # 2. Packages
