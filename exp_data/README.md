@@ -1,147 +1,108 @@
-```markdown
 # Single-Cell Tracking Dataset of HeLa Cells
 
-## Overview
+Single-cell tracking data of **HeLa cervical cancer cells** acquired by long-term time-lapse microscopy using a custom shear-free, diffusive microfluidic platform.
 
-This repository contains single-cell tracking data of **HeLa cervical cancer cells** acquired by long-term time-lapse microscopy using a custom **shear-free, diffusive microfluidic platform**.
-
-The dataset was generated to estimate model parameters and validate a **cellular automata (CA) model** describing cell proliferation, cell-cycle variability, and the inheritance of proliferative behavior across successive cell generations.
+The dataset was used for parameter estimation and validation of a cellular automata (CA) model describing cell proliferation, cell-cycle variability, and inheritance across successive cell generations.
 
 ---
 
-## Dataset Structure
+## Dataset
 
-The repository contains **15 CSV files**, each representing one independent microfluidic chamber analyzed in the study.
+The repository contains **15 CSV files**, each corresponding to one independent microfluidic chamber.
 
-```
+**Files**
 
-1.csv
-2.csv
-...
-15.csv
+- 1.csv
+- 2.csv
+- ...
+- 15.csv
 
-```
-
-Each file contains complete tracking information for all cells observed within a single chamber.
+Each file contains the complete tracking information for all cells observed within a single chamber.
 
 ---
 
-## Data Format
+## Variables
 
-Each CSV file contains the following variables:
-
-| Column | Description |
-|---------|-------------|
-| **Position X [μm]** | Horizontal (X) coordinate of the cell centroid, expressed in micrometers. |
-| **Position Y [μm]** | Vertical (Y) coordinate of the cell centroid, expressed in micrometers. |
-| **Time [h]** | Time elapsed since the beginning of the experiment (hours). |
-| **Lineage ID** | Hierarchical identifier encoding the complete cell pedigree. |
+| Variable | Description |
+|----------|-------------|
+| **Position X [μm]** | Horizontal coordinate of the cell centroid. |
+| **Position Y [μm]** | Vertical coordinate of the cell centroid. |
+| **Time [h]** | Time elapsed from the beginning of the experiment. |
+| **Lineage ID** | Hierarchical identifier describing the cell pedigree. |
 
 ---
 
-## Cell Lineage Encoding
+## Cell Lineage
 
-Each cell is assigned a unique hierarchical identifier representing its complete division history.
+Founder cells are assigned single-digit identifiers.
 
-### Founder cells
+Example:
 
-Cells present at the beginning of the experiment receive single-digit identifiers:
+**Generation 1**
 
-```
+- 1
 
-1
-2
-3
-...
+↓
 
-```
+**Generation 2**
 
-### Cell division
+- 11
+- 12
 
-After mitosis, daughter cells inherit the mother's identifier with an appended **1** or **2**:
+↓
 
-```
+**Generation 3**
 
-1
-├── 11
-└── 12
+- 111
+- 112
+- 121
+- 122
 
-```
-
-Subsequent divisions continue recursively:
-
-```
-
-1
-├── 11
-│   ├── 111
-│   └── 112
-└── 12
-├── 121
-└── 122
-
-```
-
-The number of digits in the **Lineage ID** directly corresponds to the **generation number** of the cell.
+The number of digits in the **Lineage ID** corresponds directly to the generation number.
 
 ---
 
-## Dataset Partitioning
+## Training and Test Sets
 
-For parameter optimization and independent model evaluation, the dataset was divided into separate training and testing subsets.
-
-### Training set
-
-- Chamber 9
-- Chamber 10
-- Chamber 11
-
-### Test set
-
-- Chambers 1–8
-- Chambers 12–15
+| Dataset | Chambers |
+|---------|----------|
+| **Training** | 9, 10, 11 |
+| **Test** | 1–8, 12–15 |
 
 ---
 
-## Repository Contents
+## Repository Structure
 
-```
-
-.
-├── 1.csv
-├── 2.csv
-├── ...
-├── 15.csv
-└── README.md
-
-```
+- README.md
+- 1.csv
+- 2.csv
+- ...
+- 15.csv
 
 ---
 
 ## Applications
 
-This dataset is suitable for research involving:
+This dataset can be used for:
 
-- Cellular automata models
-- Agent-based modeling
+- Cellular automata modeling
+- Cell lineage reconstruction
 - Cell-cycle analysis
-- Single-cell lineage reconstruction
 - Time-lapse microscopy
-- Cell proliferation studies
+- Agent-based modeling
 - Parameter estimation
-- Mathematical modeling of tumor growth
+- Model validation
 
 ---
 
 ## Citation
 
-If you use this dataset in your research, please cite the associated publication.
+If you use this dataset, please cite the associated publication.
 
-**Citation will be added upon publication.**
+*The citation will be added after publication.*
 
 ---
 
 ## Contact
 
-For questions regarding the dataset or the accompanying cellular automata model, please contact the corresponding author listed in the associated publication.
-```
+For questions regarding the dataset, please contact the corresponding author listed in the associated publication.
