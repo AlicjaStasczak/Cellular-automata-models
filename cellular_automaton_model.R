@@ -162,7 +162,7 @@ rden <- function(n, den) {
 #   data_raw <- data_ref
 #   data_raw <- data_raw[!is.na(as.numeric(data_raw$Default_Labels)), ]
 #
-#   data <- openxlsx::read.xlsx(file_path, skipEmptyRows = TRUE)
+#   data <- openxlsx::read.xlsx(file_path, sheet = 'Overall', skipEmptyRows = TRUE)
 #   data <- data[!is.na(as.numeric(data$Default_Labels)), ]
 #
 #   cycle_length <- data$Cycle_length
