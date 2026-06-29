@@ -48,3 +48,6 @@ If you use this code in your research, please cite:
 
 **Student S., Staśczak A.**
 *Modeling of living cancer cells in a microfluidic in vitro platform using cellular automata models.*
+
+**Student S, Milewska M, Ostrowski Z, Gut K, Wandzik I.**
+Microchamber microfluidics combined with thermogellable glycomicrogels - Platform for single cells study in an artificial cellular microenvironment. Mater Sci Eng C Mater Biol Appl. 2021 Feb;119:111647. doi: 10.1016/j.msec.2020.111647. Epub 2020 Oct 17. PMID: 33321683.
