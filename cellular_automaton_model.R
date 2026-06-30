@@ -9,8 +9,8 @@
 # Required input structure:
 #   project_dir/
 #   ├── exp_data/
-#   ├── reference.rda           # Fitted logspline distributions:
-#   │                        # fit.angles, fit.distances, fit.cycle.length
+#   ├── ref_data/           
+#   │                        
 #   └── this_script.R
 #
 # Main output:
