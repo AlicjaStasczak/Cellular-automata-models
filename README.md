@@ -1,4 +1,4 @@
-# Cellular Automata Model for Cancer Cell Growth
+# Iterative parameter-testing system based on a stochastic cellular automata (CA) model
 
 This repository contains an R implementation of a stochastic cellular automaton (CA) model developed to simulate cancer cell proliferation in a microfluidic environment.
 
