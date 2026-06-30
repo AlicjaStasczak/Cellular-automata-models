@@ -25,8 +25,7 @@ Three biological hypotheses are implemented:
 
 The model requires:
 
-- experimental Excel files (`.xlsx`) containing cell growth data,
-- a reference `.rda` file with fitted probability distributions (cell cycle length, migration distance, and migration angle).
+- experimental Excel files (`.xlsx`) containing cell growth data
 
 ## Output
 
