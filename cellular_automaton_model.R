@@ -16,13 +16,22 @@
 # Main output:
 #   simulation_result.csv
 
+library(openxlsx)
+library(dplyr)
+library(tidyr)
+library(logspline)
+
+# Cellular automaton model
+# ---------------------------------------------------
+
 options(repos = c(CRAN = "https://cran.r-project.org"))
 
 # -----------------------------------------------------------------------------
 # 1. Project path
 # -----------------------------------------------------------------------------
+
 experimental_data_dir <- "exp_data/"
-initial_conditions_file <- "reference.rda"
+reference_data_dir <- "ref_data/"
 output_file_csv <- "simulation_results.csv"
 
 # -----------------------------------------------------------------------------
@@ -30,7 +39,7 @@ output_file_csv <- "simulation_results.csv"
 # -----------------------------------------------------------------------------
 
 required_packages <- c(
-  "logspline", "openxlsx", "TeachingDemos", "ggplot2",
+  "logspline", "openxlsx", "dplyr", "tidyr", "TeachingDemos", "ggplot2",
   "ggpubr", "DT", "waiter", "foreach", "doParallel", "bslib",
   "stringr", "readxl", "glue", "phylolm", "RColorBrewer",
   "globals", "ape"
@@ -60,7 +69,6 @@ max_iterations <- 1000
 # 4. Helper functions
 # -----------------------------------------------------------------------------
 
-# Load all files from a selected folder.
 load_multiple_excel_files <- function(folder_path, sheet_name = "Overall") {
   files <- list.files(path = folder_path, pattern = "\\.xlsx$", full.names = TRUE)
 
@@ -71,7 +79,6 @@ load_multiple_excel_files <- function(folder_path, sheet_name = "Overall") {
   return(list(data_list = data_list, files = files))
 }
 
-# Extract experimental cell-count data.
 prepare_experimental_data <- function(data_exp) {
   if (all(c("Variable", "Value", "Time") %in% colnames(data_exp))) {
     real_data <- data_exp[data_exp$Variable == "Number of Cells per Time Point", ]
@@ -88,17 +95,14 @@ prepare_experimental_data <- function(data_exp) {
   return(real_data)
 }
 
-# Euclidean distance between two vectors of the same length.
 euclid_dist <- function(a, b) {
   sqrt(sum((a - b)^2))
 }
 
-# Angle between two 2D vectors.
 angle_val <- function(M, N) {
   atan2(N[2], N[1]) - atan2(M[2], M[1])
 }
 
-# Calculate new cell coordinates based on distance and angle.
 coord_val <- function(x, y, distance, angle) {
   data.frame(
     x = x + distance * cos(angle),
@@ -106,12 +110,10 @@ coord_val <- function(x, y, distance, angle) {
   )
 }
 
-# Generate an empty cellular automaton grid.
 generate_mesh <- function(cell_matrix_size) {
   matrix("0", nrow = cell_matrix_size, ncol = cell_matrix_size)
 }
 
-# Calculate a sequence of movement angles from x/y coordinates.
 angles <- function(x, y) {
   angle <- c()
 
@@ -124,7 +126,6 @@ angles <- function(x, y) {
   return(angle)
 }
 
-# Calculate coordinates for multiple cells.
 coord <- function(x, y, distance, angle) {
   coord_matrix <- matrix(nrow = length(x), ncol = 2)
 
@@ -136,7 +137,6 @@ coord <- function(x, y, distance, angle) {
   return(coord_matrix)
 }
 
-# Generate a random sample from a fitted density object.
 rden <- function(n, den) {
   diffs <- diff(den$x)
   stopifnot(all(abs(diff(den$x) - mean(diff(den$x))) < 1e-9))
@@ -151,34 +151,111 @@ rden <- function(n, den) {
   return(x)
 }
 
-# -----------------------------------------------------------------------------
-# 5. Optional reference-model preparation
-# -----------------------------------------------------------------------------
-# The original workflow used pre-fitted logspline distributions stored in
-# reference.rda. The commented function below documents how such a file can be
-# generated from reference data, but it is not executed by default.
+calculate_angles <- function(x, y) {
+  atan2(diff(y), diff(x))
+}
 
-# data_parameters <- function(file_path, data_ref) {
-#   data_raw <- data_ref
-#   data_raw <- data_raw[!is.na(as.numeric(data_raw$Default_Labels)), ]
-#
-#   data <- openxlsx::read.xlsx(file_path, sheet = 'Overall', skipEmptyRows = TRUE)
-#   data <- data[!is.na(as.numeric(data$Default_Labels)), ]
-#
-#   cycle_length <- data$Cycle_length
-#   fit.cycle.length <- logspline::logspline(cycle_length)
-#
-#   dist <- as.numeric(data_raw$Dist_data)
-#   fit.distances <- logspline::logspline(dist)
-#
-#   angle <- angles(x = data_raw$Cell.Position.X, y = data_raw$Cell.Position.Y)
-#   fit.angles <- logspline::logspline(angle)
-#
-#   save(fit.angles, fit.distances, fit.cycle.length, file = "reference.rda")
-# }
+to_numeric_clean <- function(x) {
+  x <- as.character(x)
+  x <- gsub(",", ".", x)
+  suppressWarnings(as.numeric(x))
+}
+
+prepare_reference_from_chambers <- function(file_paths) {
+
+  all_data <- lapply(file_paths, function(file_path) {
+
+    sheet_names <- openxlsx::getSheetNames(file_path)
+    data_sheet <- sheet_names[sheet_names != "Overall"][1]
+
+    data <- openxlsx::read.xlsx(
+      file_path,
+      sheet = data_sheet,
+      skipEmptyRows = TRUE
+    )
+
+    data <- data %>%
+      dplyr::mutate(
+        position_x = to_numeric_clean(position_x),
+        position_y = to_numeric_clean(position_y),
+        time = to_numeric_clean(time),
+        lineage_id = as.character(lineage_id),
+        chamber = tools::file_path_sans_ext(basename(file_path))
+      )
+
+    data
+  }) %>%
+    dplyr::bind_rows()
+
+  all_data <- all_data %>%
+    dplyr::filter(
+      !is.na(lineage_id),
+      lineage_id != "NA",
+      !is.na(position_x),
+      !is.na(position_y),
+      !is.na(time)
+    ) %>%
+    dplyr::mutate(
+      lineage_global = paste(chamber, lineage_id, sep = "_")
+    ) %>%
+    dplyr::arrange(lineage_global, time)
+
+  trajectory_data <- all_data %>%
+    dplyr::group_by(lineage_global) %>%
+    dplyr::arrange(time, .by_group = TRUE) %>%
+    dplyr::mutate(
+      Dist_data = sqrt(
+        (position_x - dplyr::lag(position_x))^2 +
+          (position_y - dplyr::lag(position_y))^2
+      ),
+      Distance = cumsum(dplyr::coalesce(Dist_data, 0)),
+      Cycle_length = dplyr::row_number()
+    ) %>%
+    dplyr::ungroup()
+
+  dist <- trajectory_data$Dist_data
+  dist <- dist[!is.na(dist)]
+
+  cycle_length <- trajectory_data$Cycle_length
+  cycle_length <- cycle_length[!is.na(cycle_length)]
+
+  angle <- trajectory_data %>%
+    dplyr::group_by(lineage_global) %>%
+    dplyr::summarise(
+      angle = list(calculate_angles(position_x, position_y)),
+      .groups = "drop"
+    ) %>%
+    tidyr::unnest(angle) %>%
+    dplyr::pull(angle)
+
+  angle <- angle[!is.na(angle)]
+
+  fit.distances <- logspline::logspline(dist)
+  fit.angles <- logspline::logspline(angle)
+  fit.cycle.length <- logspline::logspline(cycle_length)
+
+  invisible(list(
+    data = trajectory_data,
+    fit.angles = fit.angles,
+    fit.distances = fit.distances,
+    fit.cycle.length = fit.cycle.length
+  ))
+}
+
+reference_files <- list.files(
+  path = reference_data_dir,
+  pattern = "\\.xlsx$",
+  full.names = TRUE
+)
+
+reference_model <- prepare_reference_from_chambers(reference_files)
+
+fit.angles <- reference_model$fit.angles
+fit.distances <- reference_model$fit.distances
+fit.cycle.length <- reference_model$fit.cycle.length
 
 # -----------------------------------------------------------------------------
-# 6. Cellular automaton initialization
+# 5. Cellular automaton initialization
 # -----------------------------------------------------------------------------
 
 automaton_init <- function(
@@ -187,8 +264,7 @@ automaton_init <- function(
     sim_time,
     cell_number_init,
     deviation_percent,
-    data_exp,
-    initial_conditions_path = initial_conditions_file
+    data_exp
 ) {
   real_data <- prepare_experimental_data(data_exp)
 
@@ -207,8 +283,6 @@ automaton_init <- function(
   )
 
   cell_matrix <- generate_mesh(cell_matrix_size)
-
-  load(file = initial_conditions_path)
   unit <- cell_size / cell_matrix_size
 
   cell_data <- data.frame(
@@ -239,7 +313,7 @@ automaton_init <- function(
 }
 
 # -----------------------------------------------------------------------------
-# 7. Cellular automaton simulation
+# 6. Cellular automaton simulation
 # -----------------------------------------------------------------------------
 
 run_cellular_automaton <- function(
@@ -254,12 +328,9 @@ run_cellular_automaton <- function(
     deviation_percent,
     max_iter = NULL,
     model,
-    initial_conditions_path = initial_conditions_file,
     output_file = output_file_csv
 ) {
   death_probability <- 0.01
-
-  load(file = initial_conditions_path)
 
   real_data <- prepare_experimental_data(data_exp)
 
@@ -341,7 +412,6 @@ run_cellular_automaton <- function(
 
             if (!is.na(cell_data[id, "status"]) && cell_data[id, "status"] != "Dead") {
               if (cell_data[id, 3] > cell_data[id, 4]) {
-                # Cell movement and ageing.
                 cell_data[id, 4] <- cell_data[id, 4] + 1
 
                 success <- FALSE
@@ -367,7 +437,6 @@ run_cellular_automaton <- function(
                   }
                 }
               } else {
-                # Cell division.
                 for (cell_divided in 1:2) {
                   success <- FALSE
                   dens <- 0
@@ -525,7 +594,7 @@ run_cellular_automaton <- function(
 }
 
 # -----------------------------------------------------------------------------
-# 8. Batch execution
+# 7. Batch execution
 # -----------------------------------------------------------------------------
 
 run_algorithm <- function(s, repeats = 2) {
@@ -553,14 +622,13 @@ run_algorithm <- function(s, repeats = 2) {
         deviation_percent = deviation_percent,
         max_iter = max_iterations,
         model = model,
-        initial_conditions_path = initial_conditions_file,
         output_file = output_file_csv
       )
     }
   }
 }
 
-# Run the algorithm for SI values with a step of 0.1.
 for (s in seq(0, 1, by = 0.1)) {
   run_algorithm(s)
 }
+
