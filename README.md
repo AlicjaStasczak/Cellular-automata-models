@@ -49,4 +49,4 @@ If you use this code in your research, please cite:
 *Decoding the cellular Allee effect: A stochastic modeling tool for assessing neighborhood vs. lineage impact on cell growth*
 
 **Student S, Milewska M, Ostrowski Z, Gut K, Wandzik I.**
-Microchamber microfluidics combined with thermogellable glycomicrogels - Platform for single cells study in an artificial cellular microenvironment. Mater Sci Eng C Mater Biol Appl. 2021 Feb;119:111647. doi: 10.1016/j.msec.2020.111647. Epub 2020 Oct 17. PMID: 33321683.
+*Microchamber microfluidics combined with thermogellable glycomicrogels - Platform for single cells study in an artificial cellular microenvironment*. Mater Sci Eng C Mater Biol Appl. 2021 Feb;119:111647. doi: 10.1016/j.msec.2020.111647. Epub 2020 Oct 17. PMID: 33321683.
